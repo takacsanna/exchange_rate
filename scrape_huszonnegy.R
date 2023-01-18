@@ -1,42 +1,45 @@
 library(tidyverse)
 library(rvest)
 
-page <- read_html("https://24.hu")
+url_eredeti <- "https://24.hu/"
 
-#címsorok kiválasztása
-my_node <- page %>% 
-  html_nodes(".m-articleWidget__link")
+oldalak <- c("belfold/", "kulfold/", "fn/gazdasag/", "kultura/", "tech/", "elet-stilus/", "szorakozas/", "kozelet/",
+             "europoli/", "fn/uzleti-tippek/", "tudomany/", "sport/", "otthon/", "velemeny/")
 
-#címek szöveggé alakítása
-cim <- my_node %>% 
-  html_text() %>% 
-  as_data_frame(.) %>% 
+url_label <- paste0(url_eredeti, oldalak)
+
+url_start <- "https://24.hu/"
+url_ending <- str_c("page/", 2:5)
+url_ending <- c("", url_ending)
+
+url_vegleges <- c("")
+
+for (label in url_label) {
+  url <- str_c(label, url_ending)
+  url_vegleges = append(url_vegleges,url)
+}
+url_vegleges <- url_vegleges[-1]
+
+husz_add_df <- tibble(url_vegleges)
+
+husz_add_df <- husz_add_df %>% 
   mutate(
-    id = row_number()
+    page = map(url, read_html),
+    nodes = map(page, ~ html_nodes(., ".m-articleWidget__link")),
+    cim = map(nodes, html_text),
+    url_to_cim = map(nodes, html_attr, "href")
   )
 
-#url-ek
-url <- my_node %>% 
-  html_attr("href") %>% 
-  as_data_frame(.) %>% 
-  mutate(
-    id = row_number()
-  )
+husz_add_df <- husz_add_df %>% 
+  select(url_to_cim, cim) %>% 
+  unnest(cols = c(url_to_cim, cim)) %>% 
+  na.omit() %>%
+  unique() 
 
-#df a címekkel és linkekkel
-df <- merge(cim, url, by = "id") %>% 
-  na.omit() %>% 
-  unique() %>% 
-  set_names("id", "cim", "url")
+husz_add_df <- subset(husz_add_df, substr(url_to_cim,1,1) == "h")
 
-df
 
 #szöveg
-proba <- read_html("https://24.hu/kulfold/2023/01/15/london-lovoldozes-camden/") %>% 
-  html_nodes("p") %>% 
-  html_text() %>% 
-  .[-1] %>% 
-  paste(., collapse = " ")
 
 cikkek <- function(link) {
   link %>% 
@@ -47,19 +50,15 @@ cikkek <- function(link) {
     paste(., collapse = " ")
 }
 
-cikkek("https://24.hu/kulfold/2023/01/15/london-lovoldozes-camden/")
 
-df<-df %>% 
+husz_add_df<-husz_add_df %>% 
   mutate(
-    szoveg = map(url, cikkek)
+    szoveg = map(url_to_cim, cikkek)
   )
-df
+
+husz_add_df
 
 #dátum
-proba <- read_html("https://24.hu/kulfold/2023/01/15/london-lovoldozes-camden/") %>% 
-  html_nodes(".a-date") %>% 
-  html_text() %>% 
-  str_extract("2023. \\d\\d. \\d\\d. \\d\\d:\\d\\d")
 
 datum <- function(link) {
   link %>% 
@@ -71,9 +70,9 @@ datum <- function(link) {
 
 datum("https://24.hu/szorakozas/2023/01/15/pamela-anderson-sosem-olvasta-el-lily-james-levelet/")
 
-df<-df %>% 
+husz_add_df<-husz_add_df %>% 
   mutate(
-    date = map(url, datum)
+    date = map(url_to_cim, datum)
   ) %>% 
   set_names("id", "cim", "url", "szoveg", "date")
 
