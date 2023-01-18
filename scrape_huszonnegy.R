@@ -1,6 +1,7 @@
 library(tidyverse)
 library(rvest)
 
+#linkek generálása az oldalakhoz
 url_eredeti <- "https://24.hu/"
 
 oldalak <- c("belfold/", "kulfold/", "fn/gazdasag/", "kultura/", "tech/", "elet-stilus/", "szorakozas/", "kozelet/",
@@ -20,8 +21,10 @@ for (label in url_label) {
 }
 url_vegleges <- url_vegleges[-1]
 
+#tibble létrehozása
 husz_add_df <- tibble(url_vegleges)
 
+#cikkcímek és a rájuk mutató link kimentése és kibontása tibble-ben 
 husz_add_df <- husz_add_df %>% 
   mutate(
     page = map(url, read_html),
@@ -36,10 +39,11 @@ husz_add_df <- husz_add_df %>%
   na.omit() %>%
   unique() 
 
+#helytelen linkek kidobása
 husz_add_df <- subset(husz_add_df, substr(url_to_cim,1,1) == "h")
 
 
-#szöveg
+#cikkek szövege
 
 cikkek <- function(link) {
   link %>% 
@@ -68,14 +72,13 @@ datum <- function(link) {
     str_extract("2023. \\d\\d. \\d\\d. \\d\\d:\\d\\d")
 }
 
-datum("https://24.hu/szorakozas/2023/01/15/pamela-anderson-sosem-olvasta-el-lily-james-levelet/")
-
 husz_add_df<-husz_add_df %>% 
   mutate(
     date = map(url_to_cim, datum)
   ) %>% 
   set_names("id", "cim", "url", "szoveg", "date")
 
+#kisebb átalakítások és tisztítás
 df <- as_data_frame(df)
 df$szoveg <- as.character(df$szoveg)
 df$date <- as.character(df$date)
@@ -88,5 +91,6 @@ df
 df$cim <- iconv(df$cim,from="UTF-8",to="ASCII//TRANSLIT")
 df$szoveg <- iconv(df$szoveg,from="UTF-8",to="ASCII//TRANSLIT")
 
+#mentés csv-be
 df %>% 
  write_csv(file = str_c("abrakadabra.csv"))
