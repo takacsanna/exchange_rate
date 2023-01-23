@@ -46,18 +46,19 @@ get_text <- function(x) {
       html_nodes(".cikk-torzs>p, .cikk-torzs>blockquote>p") %>%
       html_text %>%
       str_flatten(" ")
-  }, sleep_times = c(7, rep(10, 15)), otherwise = NA_character_, print_warning = TRUE)
+  },
+  sleep_times = c(7, rep(4, 15), 180, 180, 180, rep(4, 15)),
+  otherwise = as.character(NA),
+  print_warning = TRUE)
 
   tibble(url = x, text)
 }
 
-news_text_df <- progress_map(news_meta_df$url, get_text) |>
-  bind_rows()
-
+news_text_df <- progress_map(news_meta_df$url, get_text)
 
 list(
   accesed_time = accesed_time,
-  data = full_join(news_meta_df, news_text_df, by = "url")
+  data = full_join(news_meta_df, bind_rows(news_text_df), by = "url")
 ) |>
   pin_write(
     board = .board,
