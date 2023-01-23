@@ -8,8 +8,6 @@ oldalak <- c("belfold/", "kulfold/", "fn/gazdasag/", "kultura/", "tech/", "elet-
              "europoli/", "fn/uzleti-tippek/", "tudomany/", "sport/", "otthon/", "velemeny/")
 
 url_label <- paste0(url_eredeti, oldalak)
-
-url_start <- "https://24.hu/"
 url_ending <- str_c("page/", 2:5)
 url_ending <- c("", url_ending)
 
