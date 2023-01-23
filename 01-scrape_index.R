@@ -28,7 +28,7 @@ get_news_meta <- function(x) {
         html_attr("href") |>
         reduce(c)
     )
-  }, sleep_times = c(5, 10, 20, 30, 30), print_warning = TRUE)
+  }, sleep_times = c(7, rep(10, 15)), print_warning = TRUE)
 }
 
 
@@ -46,12 +46,12 @@ get_text <- function(x) {
       html_nodes(".cikk-torzs>p, .cikk-torzs>blockquote>p") %>%
       html_text %>%
       str_flatten(" ")
-  }, sleep_times = c(5, 10, 20, 30, 30), otherwise = NA_character_, print_warning = TRUE)
+  }, sleep_times = c(7, rep(10, 15)), otherwise = NA_character_, print_warning = TRUE)
 
   tibble(url = x, text)
 }
 
-news_text_df <- safely_map(news_meta_df$url, get_text) |>
+news_text_df <- progress_map(news_meta_df$url, get_text) |>
   bind_rows()
 
 
