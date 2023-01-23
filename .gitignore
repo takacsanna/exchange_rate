@@ -1,2 +1,10 @@
-
-!origo_scrape.r
+*
+!LICENSE
+!README.md
+!utils.R
+!.Rprofile
+!01-scrape_huszonnegy.R
+!01-scrape_index.R
+!01-scrape_origo.R
+!01-scrape_telex.R
+.Rproj.user
