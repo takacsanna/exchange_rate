@@ -40,6 +40,8 @@ news_meta_df <- safely_map(scrape_urls, get_news_meta) |>
 
 get_text <- function(x) {
   text <- n_times_try({
+    closeAllConnections()
+    Sys.sleep(.3)
     read_html(x) %>%
       html_nodes(".cikk-torzs>p, .cikk-torzs>blockquote>p") %>%
       html_text %>%
@@ -49,7 +51,7 @@ get_text <- function(x) {
   tibble(url = x, text)
 }
 
-news_text_df <- safely_map(news_meta_df$url[1:5], get_text) |>
+news_text_df <- safely_map(news_meta_df$url, get_text) |>
   bind_rows()
 
 
