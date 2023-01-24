@@ -32,7 +32,7 @@ get_news_meta <- function(x) {
   }, sleep_times = c(7, rep(10, 15)))
 }
 
-news_meta_df <- progress_map(scrape_urls[1:3], get_news_meta) |>
+news_meta_df <- progress_map(scrape_urls, get_news_meta) |>
   bind_rows() |>
   mutate(
     time = str_squish(time)
