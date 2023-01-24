@@ -27,12 +27,12 @@ get_news_meta <- function(x) {
       url = html_nodes(page, ".cim a") |>
         html_attr("href") |>
         reduce(c)
-    )
-  }, sleep_times = c(7, rep(10, 15)), print_warning = TRUE)
+    ) |>
+      (\(x) if (is_tibble(x)) x else stop("Not tibble")) ()
+  }, sleep_times = c(7, rep(10, 15)))
 }
 
-
-news_meta_df <- safely_map(scrape_urls, get_news_meta) |>
+news_meta_df <- progress_map(scrape_urls, get_news_meta) |>
   bind_rows() |>
   mutate(
     time = str_squish(time)
@@ -44,13 +44,12 @@ get_text <- function(x) {
     Sys.sleep(.3)
     read_html(x) %>%
       html_nodes(".cikk-torzs>p, .cikk-torzs>blockquote>p") %>%
-      html_text %>%
+      html_text() %>%
       str_flatten(" ")
   },
-  sleep_times = c(7, rep(4, 15), 180, 180, 180, rep(4, 15)),
-  otherwise = as.character(NA),
-  print_warning = TRUE)
-
+  sleep_times = c(rep(1, 3), rep(15, 4), rep(180, 3), rep(15, 4)),
+  otherwise = as.character(NA)
+  )
   tibble(url = x, text)
 }
 
