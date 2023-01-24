@@ -48,7 +48,6 @@ news_meta_df <- progress_map(scrape_urls, get_news_meta) |>
   )
 
 get_text <- function(x) {
-  print(x)
   text <- n_times_try({
     closeAllConnections()
     Sys.sleep(.2)
@@ -58,9 +57,9 @@ get_text <- function(x) {
       str_flatten(" ")
   },
   sleep_times = c(rep(c(3, 3, 15), 5), rep(180, 3), rep(15, 4)),
-  otherwise = as.character(NA),
-  print_message = T
+  otherwise = as.character(NA)
   )
+
   tibble(url = x, text)
 }
 
