@@ -17,7 +17,7 @@ scrape_urls <- read_html(search_url) %>%
 
 get_news_meta <- function(x) {
   n_times_try({
-    Sys.sleep(.5)
+    Sys.sleep(1)
     closeAllConnections()
     page <- read_html(x)
     tibble(
@@ -27,40 +27,51 @@ get_news_meta <- function(x) {
       url = html_nodes(page, ".cim a") |>
         html_attr("href") |>
         reduce(c)
-    )
-  }, sleep_times = c(7, rep(10, 15)), print_warning = TRUE)
+    ) |>
+      (\(x) if (is_tibble(x)) x else stop("Not tibble")) ()
+  }, sleep_times = c(7, rep(10, 15)))
 }
 
-
-news_meta_df <- safely_map(scrape_urls, get_news_meta) |>
+news_meta_df <- progress_map(scrape_urls, get_news_meta) |>
   bind_rows() |>
   mutate(
     time = str_squish(time)
   )
 
+.board |>
+  pin_write(
+    list(
+      accesed_time = accesed_time,
+      data = news_meta_df
+    ),
+    "index_meta"
+  )
+
 get_text <- function(x) {
   text <- n_times_try({
     closeAllConnections()
-    Sys.sleep(.3)
+    Sys.sleep(.2)
     read_html(x) %>%
       html_nodes(".cikk-torzs>p, .cikk-torzs>blockquote>p") %>%
-      html_text %>%
+      html_text() %>%
       str_flatten(" ")
-  }, sleep_times = c(7, rep(10, 15)), otherwise = NA_character_, print_warning = TRUE)
+  },
+  sleep_times = c(rep(c(3, 3, 15), 5), rep(180, 3), rep(15, 4)),
+  otherwise = as.character(NA)
+  )
 
   tibble(url = x, text)
 }
 
-news_text_df <- progress_map(news_meta_df$url, get_text) |>
+news_text_df <- pin_read(.board, "index_meta") |>
+  pluck("data") |>
+  pull(url) |>
+  cache_map(get_text, .id = "index_text") |>
   bind_rows()
 
-
-list(
-  accesed_time = accesed_time,
-  data = full_join(news_meta_df, news_text_df, by = "url")
-) |>
+news_text_df |>
   pin_write(
     board = .board,
-    name = "index"
+    name = "index_text"
   )
 
