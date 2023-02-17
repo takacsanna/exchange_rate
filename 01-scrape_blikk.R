@@ -70,3 +70,9 @@ get_text <- function(x) {
 }
 
 text_df <- cp_map_dfr(rev(news_meta_df$url), get_text, name = "blikk_text")
+
+pin_write(
+  board = .board,
+  text_df,
+  "blikk_text_df"
+)
