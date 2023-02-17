@@ -1,116 +1,72 @@
-library(tidyverse)
-library(rvest)
-library(stringr)
-library(foreach)
+accesed_time <- Sys.time()
 
-alap <- "https://www.blikk.hu/archivum/online?date="
-#forma: https://www.blikk.hu/archivum/online?date=2020-10-11&page=0
+dates <- format(seq(as.Date("2020-01-01"), Sys.Date(), by="days"), format="%Y-%m-%d")
 
-datumok <- format(seq(as.Date("2020-10-01"), as.Date("2022-12-31"), by="days"), format="%Y-%m-%d") %>% 
-  as.character()
+get_news_meta <- function(date) {
+  url_base <- date |>
+    as.character() |>
+    (\(x) str_c("https://www.blikk.hu/archivum/online?date=", x, "&page=")) ()
 
-oldalak = c(0:10)
-oldalak = as.character(oldalak)
+  links_on_date <- as.character()
+  article_time_total <- as.character()
 
-url <- foreach(datum=datumok, .combine="c") %do% str_c(alap, datum, "&page=", oldalak)
+  for (i in 0:100) {
+    granatlib::n_times_try({
 
-blikk <- tibble(url)
+      page <- str_c(url_base, i) |>
+        read_html()
 
-blikk <- blikk %>% 
-  mutate(
-    page = map(url, read_html),
-    nodes = map(page, ~ html_nodes(., ".newestArticlesContent")),
-    cim = map(nodes, html_text),
-    url_to_cim = map(nodes, html_attr, "href")
+      article_links <- page |>
+        html_nodes(".mb-0 a") |>
+        html_attr("href")
+
+      article_time <- page |>
+        html_nodes(".pr-3") |>
+        html_text()
+
+    }, sleep_times = c(2, 2, 2, 2, 2)) # TODO
+
+    links_on_date <- c(links_on_date, article_links)
+    article_time_total <- c(article_time_total, article_time)
+
+    if (length(article_links) < 30) {
+      break
+    }
+  }
+
+  tibble(date, links_on_date, time = article_time_total)
+}
+
+options(currr.wait = 10, currr.folder = ".currr")
+
+news_meta_df <- cp_map_dfr(rep(dates), get_news_meta, name = "blikk_meta") |>
+  transmute(
+    time = str_squish(time),
+    time = paste(date, time),
+    url = links_on_date
+    )
+
+.board |>
+  pin_write(
+    list(
+      accesed_time = accesed_time,
+      data = news_meta_df
+    ),
+    "blikk_meta"
   )
 
-blikk2 <- blikk %>% 
-  select(url_to_cim, cim) %>% 
-  unnest(cols = c(url_to_cim, cim)) %>% 
-  na.omit() %>%
-  unique() 
-
-############################innentől csak az origo átmásolva
 get_text <- function(x) {
   text <- n_times_try({
-    closeAllConnections()
-    Sys.sleep(.2)
     read_html(x) %>%
       html_nodes("p") %>%
       html_text() %>%
-      .[-1] %>% 
-      paste(., collapse = " ")
+      str_flatten(" ")
   },
-  sleep_times = c(rep(c(0, 3, 15), 5), rep(180, 3), rep(15, 4)),
+  sleep_times = c(rep(c(0.2, 3, 15), 5), rep(180, 3), rep(15, 4)),
   otherwise = as.character(NA)
   )
-  
+
   tibble(url = x, text)
 }
 
-
-origo_add_df<-origo_add_df %>% 
-  mutate(
-    szoveg = map(url_to_cim, get_text)
-  )
-
-origo_add_df<-origo_add_df %>% 
-  unnest(szoveg)
-
-#dátum
-proba <- read_html("https://www.origo.hu/auto/20201201-leallitottak-a-megyei-autopalyamatricak-eladasat.html") %>% 
-  html_nodes(".article-date") %>% 
-  html_text() %>% 
-  str_extract("20\\d\\d.\\d\\d.\\d\\d. \\d\\d:\\d\\d")
-proba
-datum <- function(link) {
-  link %>% 
-    read_html() %>% 
-    html_nodes(".article-date") %>% 
-    html_text() %>% 
-    str_extract("20\\d\\d.\\d\\d.\\d\\d. \\d\\d:\\d\\d")
-}
-
-get_date <- function(x) {
-  text <- n_times_try({
-    closeAllConnections()
-    Sys.sleep(.2)
-    read_html(x) %>%
-      html_nodes(".article-date") %>% 
-      html_text() %>% 
-      str_extract("20\\d\\d.\\d\\d.\\d\\d. \\d\\d:\\d\\d")
-  },
-  sleep_times = c(rep(c(0, 3, 15), 5), rep(180, 3), rep(15, 4)),
-  otherwise = as.character(NA)
-  )
-  
-  tibble(url = x, text)
-}
-
-origo_add_df<-origo_add_df %>% 
-  mutate(
-    date = map(url_to_cim, get_date)
-  )
-origo_add_df3 = subset(origo_add_df, select = -c(url))
-origo_add_df3<-origo_add_df3 %>% 
-  unnest(date)
-df2 <- rename(origo_add_df3, szoveg = text)
-
-df2<-df2 %>% 
-  unnest(date)
-df2<-rename(df2, date = text)
-df2 <- as_data_frame(df2)
-df2$szoveg <- as.character(df2$szoveg)
-df2$date <- as.character(df2$date)
-
-
-#ékezetek
-df2$cim <- iconv(df2$cim,from="UTF-8",to="ASCII//TRANSLIT")
-df2$szoveg <- iconv(df2$szoveg,from="UTF-8",to="ASCII//TRANSLIT")
-df2 = subset(df2, select = -c(url))
-
-df2 %>% 
-  write_csv(file = str_c("origo_0212.csv"))
-
-df5<-read_csv("origo_0212.csv")
-origo_add_df
+text_df <- cp_map_dfr(rev(news_meta_df$url), get_text, name = "blikk_text")
