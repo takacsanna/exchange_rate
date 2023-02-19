@@ -44,7 +44,7 @@ news_meta_df <- cp_map_dfr(rep(dates), get_news_meta, name = "blikk_meta") |>
     time = str_squish(time),
     time = paste(date, time),
     url = links_on_date
-    )
+  )
 
 .board |>
   pin_write(
@@ -55,6 +55,8 @@ news_meta_df <- cp_map_dfr(rep(dates), get_news_meta, name = "blikk_meta") |>
     "blikk_meta"
   )
 
+s_times <- c(rep(2, 2), 1) # avoid update caused restart at cp_map
+
 get_text <- function(x) {
   text <- n_times_try({
     read_html(x) %>%
@@ -62,17 +64,21 @@ get_text <- function(x) {
       html_text() %>%
       str_flatten(" ")
   },
-  sleep_times = c(rep(c(0.2, 3, 15), 5), rep(180, 3), rep(15, 4)),
+  sleep_times = s_times,
   otherwise = as.character(NA)
   )
 
   tibble(url = x, text)
 }
 
-text_df <- cp_map_dfr(rev(news_meta_df$url), get_text, name = "blikk_text")
+options(currr.wait = 1, currr.n_checkpoint = 100, currr.workers = 1)
 
-pin_write(
-  board = .board,
-  text_df,
-  "blikk_text_df"
-)
+text_df <- cp_map(rev(news_meta_df$url), get_text, name = "blikk_text")
+
+text_df |>
+  keep(~ !is.logical(.$text) & !is.na(.$text)) |>
+  bind_rows() |>
+  pin_write(
+    board = .board,
+    name = "blikk_text_df"
+  )
