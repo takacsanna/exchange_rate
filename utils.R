@@ -13,6 +13,8 @@ suppressPackageStartupMessages({
   library(patchwork)
   library(furrr)
   library(currr)
+  library(tidytext)
+  library(gt)
   options(dplyr.summarise.inform = FALSE)
   options(future.globals.maxSize = 891289600)
   options(todor_extra = c("qmd", "md", "txt", "r"))

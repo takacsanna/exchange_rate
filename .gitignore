@@ -3,10 +3,5 @@
 !README.md
 !utils.R
 !.Rprofile
-!01-scrape_huszonnegy.R
-!01-scrape_index.R
-!01-scrape_origo.R
-!01-scrape_telex.R
-!01-scrape_blikk.R
-!02-data-setup.R
+![0-9][0-9]*.R
 .Rproj.user
