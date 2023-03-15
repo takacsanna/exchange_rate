@@ -29,15 +29,21 @@ trigram_tf_idf |>
 
 raw_2 <- raw_news_df %>% 
   filter(medium == "blikk") %>% 
-  mutate(text = str_extract(text, "Ezeket látta már.*?[.]"))
-unique(raw_2$text)
+  mutate(text = str_extract(text, "Ezeket látta már?.*"))
+raw_2 %>% 
+  count(text)
+
 raw_3 <- raw_news_df %>% 
   filter(medium == "telex") %>% 
   mutate(text = str_remove(text, "Erről a témáról ide kattintva angol nyelven is olvashat a Telex English oldalán. Nagyon kevés az olyan magyarországi lap, amelyik politikától független, és angol nyelvű híreket is kínál. A Telex viszont ilyen, naponta többször közöljük minden olyan anyagunkat angolul is, amelynek nemzetközi relevanciája van, és az angolul olvasó közönségnek is érdekes lehet: hírek, politikai elemzések, tényfeltárások, színes riportok. Vigye hírét a Telex English rovatnak, Twitterünknek és angol nyelvű heti hírlevelünknek az angolul olvasó ismerősei között!"))
+raw_3 %>% 
+  count(text)
 
 raw_4 <- raw_news_df %>% 
   filter(medium == "origo") %>% 
-  mutate(text = str_remove(text, "Ha szeretne még több érdekes techhírt olvasni, akkor kövesse az Origo Techbázis Facebook-oldalát, kattintson ide!"))
+  mutate(text = str_extract(text, "Ha szeretne még több érdekes techhírt olvasni, akkor kövesse az Origo Techbázis Facebook-oldalát, kattintson ide!"))
+raw_4 %>% 
+  count(text)
 
 unique(raw_news_df$medium)
 
