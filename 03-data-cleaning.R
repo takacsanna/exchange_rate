@@ -29,13 +29,16 @@ trigram_tf_idf |>
 
 raw_2 <- raw_news_df %>% 
   filter(medium == "blikk") %>% 
-  mutate(text = str_extract(text, "Ezeket látta már?.*"))
+  mutate(text = str_remove(text, "Ezeket látta már?.*?(?=.)"))
 raw_2 %>% 
   count(text)
+raw_2$text <- iconv(raw_2$text,from="UTF-8",to="ASCII//TRANSLIT")
 
+raw_2 %>% 
+  write_csv("blikk_raw.csv")
 raw_3 <- raw_news_df %>% 
   filter(medium == "telex") %>% 
-  mutate(text = str_remove(text, "Erről a témáról ide kattintva angol nyelven is olvashat a Telex English oldalán. Nagyon kevés az olyan magyarországi lap, amelyik politikától független, és angol nyelvű híreket is kínál. A Telex viszont ilyen, naponta többször közöljük minden olyan anyagunkat angolul is, amelynek nemzetközi relevanciája van, és az angolul olvasó közönségnek is érdekes lehet: hírek, politikai elemzések, tényfeltárások, színes riportok. Vigye hírét a Telex English rovatnak, Twitterünknek és angol nyelvű heti hírlevelünknek az angolul olvasó ismerősei között!"))
+  mutate(text = str_extract(text, "Erről a témáról ide kattintva angol nyelven is olvashat a Telex English oldalán. Nagyon kevés az olyan magyarországi lap, amelyik politikától független, és angol nyelvű híreket is kínál. A Telex viszont ilyen, naponta többször közöljük minden olyan anyagunkat angolul is, amelynek nemzetközi relevanciája van, és az angolul olvasó közönségnek is érdekes lehet: hírek, politikai elemzések, tényfeltárások, színes riportok. Vigye hírét a Telex English rovatnak, Twitterünknek és angol nyelvű heti hírlevelünknek az angolul olvasó ismerősei között!"))
 raw_3 %>% 
   count(text)
 
@@ -50,21 +53,18 @@ unique(raw_news_df$medium)
 raw_5 <- raw_news_df %>% 
   filter(medium == "huszonnegy" | medium == "portfolio" | medium == "index")
 
-tiszta <- rbind(raw_2, raw_3, raw_4, raw_5)
+tiszta <- rbind(raw_3, raw_4, raw_5)
 
 sm2 <- tiszta |>
   group_by(medium) |>
   sample_n(100)
 
-proba <- sm2 |>
+df <- sm2 |>
   unnest_ngrams("ngram", text, n = 5) |>
   count(medium, ngram) |>
   bind_tf_idf(ngram, medium, n)
 
-proba %>% 
-  write_csv("probatf3.csv")
-
-proba |>
+df |>
   slice_max(n, n = 10) |>
   left_join(sm2, multiple = "all") |>
   filter(str_detect(text, ngram)) |>
@@ -74,3 +74,5 @@ proba |>
   select(medium, n, text) |>
   gt() |>
   fmt_markdown(text, rows = everything())
+install.packages("rstudioapi")
+
