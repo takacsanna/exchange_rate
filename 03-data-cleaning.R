@@ -1,17 +1,14 @@
 raw_news_df <- pin_read(.board, "raw_news_df")
-
 set.seed(1)
 
 sm1 <- raw_news_df |>
   group_by(medium) |>
-  sample_n(500)
+  sample_n(100)
 
 trigram_tf_idf <- sm1 |>
   unnest_ngrams("ngram", text, n = 5) |>
   count(medium, ngram) |>
   bind_tf_idf(ngram, medium, n)
-
-trigram_df_idf <- read_csv("C:/Users/Anna/Documents/egyi/MNB/tdk/proba/adatok/tfidf0312.csv")
 
 trigram_tf_idf |>
   slice_max(n, n = 10) |>
@@ -23,41 +20,30 @@ trigram_tf_idf |>
   select(medium, n, text) |>
   gt() |>
   fmt_markdown(text, rows = everything())
-?filter
-#Erről a témáról ide kattintva angol nyelven is olvashat a Telex English oldalán. Nagyon kevés az olyan magyarországi lap, amelyik politikától független, és angol nyelvű híreket is kínál. A Telex viszont ilyen, naponta többször közöljük minden olyan anyagunkat angolul is, amelynek nemzetközi relevanciája van, és az angolul olvasó közönségnek is érdekes lehet: hírek, politikai elemzések, tényfeltárások, színes riportok. Vigye hírét a Telex English rovatnak, Twitterünknek és angol nyelvű heti hírlevelünknek az angolul olvasó ismerősei között!
-#Ha szeretne még több érdekes techhírt olvasni, akkor kövesse az Origo Techbázis Facebook-oldalát, kattintson ide!
 
-raw_2 <- raw_news_df %>% 
-  filter(medium == "blikk") %>% 
-  mutate(text = str_remove(text, "Ezeket látta már?.*?(?=.)"))
-raw_2 %>% 
-  count(text)
-raw_2$text <- iconv(raw_2$text,from="UTF-8",to="ASCII//TRANSLIT")
-
-raw_2 %>% 
-  write_csv("blikk_raw.csv")
+raw_news_df$time <- as.character(raw_news_df$time)
 raw_3 <- raw_news_df %>% 
   filter(medium == "telex") %>% 
-  mutate(text = str_extract(text, "Erről a témáról ide kattintva angol nyelven is olvashat a Telex English oldalán. Nagyon kevés az olyan magyarországi lap, amelyik politikától független, és angol nyelvű híreket is kínál. A Telex viszont ilyen, naponta többször közöljük minden olyan anyagunkat angolul is, amelynek nemzetközi relevanciája van, és az angolul olvasó közönségnek is érdekes lehet: hírek, politikai elemzések, tényfeltárások, színes riportok. Vigye hírét a Telex English rovatnak, Twitterünknek és angol nyelvű heti hírlevelünknek az angolul olvasó ismerősei között!"))
-raw_3 %>% 
-  count(text)
+  mutate(text = str_remove(text, "Erről a témáról ide kattintva angol nyelven is olvashat a Telex English oldalán. Nagyon kevés az olyan magyarországi lap, amelyik politikától független, és angol nyelvű híreket is kínál. A Telex viszont ilyen, naponta többször közöljük minden olyan anyagunkat angolul is, amelynek nemzetközi relevanciája van, és az angolul olvasó közönségnek is érdekes lehet: hírek, politikai elemzések, tényfeltárások, színes riportok. Vigye hírét a Telex English rovatnak, Twitterünknek és angol nyelvű heti hírlevelünknek az angolul olvasó ismerősei között!"))
+
 
 raw_4 <- raw_news_df %>% 
   filter(medium == "origo") %>% 
-  mutate(text = str_extract(text, "Ha szeretne még több érdekes techhírt olvasni, akkor kövesse az Origo Techbázis Facebook-oldalát, kattintson ide!"))
-raw_4 %>% 
-  count(text)
+  mutate(text = str_remove(text, "Ha szeretne még több érdekes techhírt olvasni, akkor kövesse az Origo Techbázis Facebook-oldalát, kattintson ide!"))
 
-unique(raw_news_df$medium)
+raw_5 <- raw_news_df |>
+  filter(medium == "blikk") |>
+  str_remove("Ez is érdekelheti.*$") |>
+  str_remove("Ezeket látta már*$")
 
-raw_5 <- raw_news_df %>% 
+raw_6 <- raw_news_df %>% 
   filter(medium == "huszonnegy" | medium == "portfolio" | medium == "index")
 
-tiszta <- rbind(raw_3, raw_4, raw_5)
+clean_news_df <- rbind(raw_3, raw_4, raw_5, raw_6)
 
-sm2 <- tiszta |>
+sm2 <- clean_news_df |>
   group_by(medium) |>
-  sample_n(100)
+  sample_n(100, replace = T)
 
 df <- sm2 |>
   unnest_ngrams("ngram", text, n = 5) |>
@@ -74,5 +60,3 @@ df |>
   select(medium, n, text) |>
   gt() |>
   fmt_markdown(text, rows = everything())
-install.packages("rstudioapi")
-

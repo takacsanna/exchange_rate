@@ -60,7 +60,7 @@ s_times <- c(rep(2, 2), 1) # avoid update caused restart at cp_map
 get_text <- function(x) {
   text <- n_times_try({
     read_html(x) %>%
-      html_nodes("p") %>%
+      html_nodes(".detail p") %>%
       html_text() %>%
       str_flatten(" ")
   },
@@ -75,10 +75,18 @@ options(currr.wait = 1, currr.n_checkpoint = 100, currr.workers = 1)
 
 text_df <- cp_map(rev(news_meta_df$url), get_text, name = "blikk_text")
 
-text_df |>
+text2<-text_df |>
   keep(~ !is.logical(.$text) & !is.na(.$text)) |>
   bind_rows() |>
   pin_write(
     board = .board,
     name = "blikk_text_df"
   )
+
+text2 %>% 
+  write_csv("blikktext.csv")
+news_meta_df %>% 
+  write_csv("meta.csv")
+
+blikk_2 <- merge(text2, news_meta_df)
+?merge
