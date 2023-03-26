@@ -22,24 +22,30 @@ trigram_tf_idf |>
   fmt_markdown(text, rows = everything())
 
 raw_news_df$time <- as.character(raw_news_df$time)
-raw_3 <- raw_news_df %>% 
-  filter(medium == "telex") %>% 
+
+raw_3 <- raw_news_df %>%
+  filter(medium == "telex") %>%
   mutate(text = str_remove(text, "Erről a témáról ide kattintva angol nyelven is olvashat a Telex English oldalán. Nagyon kevés az olyan magyarországi lap, amelyik politikától független, és angol nyelvű híreket is kínál. A Telex viszont ilyen, naponta többször közöljük minden olyan anyagunkat angolul is, amelynek nemzetközi relevanciája van, és az angolul olvasó közönségnek is érdekes lehet: hírek, politikai elemzések, tényfeltárások, színes riportok. Vigye hírét a Telex English rovatnak, Twitterünknek és angol nyelvű heti hírlevelünknek az angolul olvasó ismerősei között!"))
 
 
-raw_4 <- raw_news_df %>% 
-  filter(medium == "origo") %>% 
+raw_4 <- raw_news_df %>%
+  filter(medium == "origo") %>%
   mutate(text = str_remove(text, "Ha szeretne még több érdekes techhírt olvasni, akkor kövesse az Origo Techbázis Facebook-oldalát, kattintson ide!"))
 
 raw_5 <- raw_news_df |>
   filter(medium == "blikk") |>
-  str_remove("Ez is érdekelheti.*$") |>
-  str_remove("Ezeket látta már*$")
+  mutate(
+    text = str_remove(text, "Ez is érdekelheti.*$") |>
+      str_remove("Ezeket látta már*$")
+  )
 
-raw_6 <- raw_news_df %>% 
+raw_6 <- raw_news_df %>%
   filter(medium == "huszonnegy" | medium == "portfolio" | medium == "index")
 
-clean_news_df <- rbind(raw_3, raw_4, raw_5, raw_6)
+clean_news_df <- rbind(raw_3, raw_4, raw_5, raw_6) |>
+  filter(medium %in% c("telex", "origo", "blikk", "huszonnegy", "portfolio", "index"))
+
+pin_write(.board, clean_news_df, "clean_news_df")
 
 sm2 <- clean_news_df |>
   group_by(medium) |>

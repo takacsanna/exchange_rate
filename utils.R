@@ -14,6 +14,7 @@ suppressPackageStartupMessages({
   library(furrr)
   library(currr)
   library(tidytext)
+  library(quanteda)
   library(gt)
   options(dplyr.summarise.inform = FALSE)
   options(future.globals.maxSize = 891289600)
