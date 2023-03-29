@@ -5,7 +5,7 @@ info("Find most frequent words")
 
 most_freq_words <- clean_news_df |>
   group_by(medium) |>
-  slice_sample(n = 100) |>
+  slice_sample(n = 1000) |>
   pull(text) |>
   tokens() |>
   tokens_tolower() |>
@@ -47,7 +47,7 @@ text_features <- clean_news_df |>
 info("Export")
 
 exchage_text_df <- eurhuf_df |>
-  transmute(time, e_rate = c(NA, diff(close))) |>
+  transmute(time, e_rate = c(NA, diff(log(close)))) |>
   left_join(text_features)
 
 pin_write(.board, most_freq_words, "most_freq_words") # useful for wordcloud

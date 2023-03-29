@@ -45,7 +45,7 @@ calculate_balance <- function(start_trading = "2022-08-01 00:00:00", l_bound, u_
   bind_cols(prediction_df, balance_df)
 }
 
-calculate_balance(start_trading = "2022-08-01 00:00:00", l_bound = -2, u_bound = 2) |>
+calculate_balance(start_trading = "2022-08-01 00:00:00", l_bound = -0.01, u_bound = 0.01) |>
   mutate(
     balance = ifelse(currency == "huf", balance / close, balance)
   ) |>

@@ -23,17 +23,19 @@ folds <- design_df |>
   )
 
 rec <- recipe(e_rate ~ ., data = design_df) |>
-  step_rm(time)
+  step_rm(time) 
 
 wf <- workflow(rec, linear_reg_glm_spec)
 
-l_bound = -2
-u_bound = 2
-
+l_bound = -0.02
+u_bound = 0.02
 
 fit(wf, analysis(folds$splits[[1]]))
 
-map(head(folds$splits), \(s) {
+x<-folds %>% 
+  slice_head(n=50) %>% 
+  pull(splits) %>% 
+  map(\(s) {
   prediction_df <- augment(fit(wf, analysis(s)), assessment(s)) |>
     select(time, e_rate, .fitted = .pred) |>
     left_join(leaded_close_df, by = join_by(time))
@@ -82,3 +84,4 @@ x |>
   ggplot(aes(t)) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), fill = "red", alpha = .3) +
   geom_line(aes(y = estimate))
+
