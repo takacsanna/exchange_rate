@@ -30,4 +30,3 @@ theme_set(
 )
 
 granatlib::create_pin("exchange-rate")
-#linerar reg (glm), svmnet
