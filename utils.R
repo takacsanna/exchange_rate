@@ -16,6 +16,8 @@ suppressPackageStartupMessages({
   library(tidytext)
   library(quanteda)
   library(gt)
+  library(parallel)
+  library(doParallel)
   options(dplyr.summarise.inform = FALSE)
   options(future.globals.maxSize = 891289600)
   options(todor_extra = c("qmd", "md", "txt", "r"))

@@ -20,6 +20,16 @@ rand_forest_lm_spec <- rand_forest(
   set_mode("regression") %>%
   translate()
 
+lasso_spec <- linear_reg(penalty = 0.1, mixture = 1) %>%
+  set_engine("glmnet") %>% 
+  translate()
+
+svm_spec <- svm_linear %>% 
+  set_engine("LiblineaR") %>% 
+  set_mode("regression") %>% 
+  translate()
+
+
 design_df <- exchage_text_df |>
   mutate(e_rate = lead(e_rate, 2)) |>
   na.omit()
@@ -74,17 +84,74 @@ mda.data.frame <- function(data, truth, estimate, na_rm = TRUE, case_weights = ~
 }
 
 mda_df <- new_numeric_metric(mda.data.frame, direction = "maximize")
-library(parallel)
-library(doParallel)
+
 magok <- detectCores()-1
-cl <- makeCluster(magok) #számítási klaszter
+cl <- makeCluster(magok)
 registerDoParallel(cl)
 
 z<-fit_resamples(
   wf,
   resamples = folds,
-  metrics = metric_set(mape, rmse, rsq, mda_df)
+  metrics = metric_set(mape, rmse, rsq)
 )
 
 stopCluster(cl)
 show_notes(.Last.tune.result)
+
+zy <- map(z$splits, \(s) {
+  training_set <- (s) |>
+    mutate(e_rate = lead(e_rate, 2)) |>
+    filter(time < ymd_hms("2022-08-01 00:00:00"))
+  
+  testing_set <- (s) |>
+    mutate(e_rate = lead(e_rate, 2)) |>
+    filter(time >= ymd_hms("2022-08-01 00:00:00"))
+  
+  prediction_df <- augment(fit(wf, analysis(s)), assessment(s)) |>
+    select(time, e_rate, .fitted = .pred) |>
+    mutate(mda = mda_vec(e_rate, .fitted, lag = 0))|>
+    left_join(leaded_close_df, by = join_by(time))
+  
+  # starting with 100 euro
+  balance_df <- tibble(balance = 100, currency = "eur")
+  for (i in 2:(nrow(prediction_df))) { # iteration for calculating the balance
+    
+    p_balance <- last(balance_df$balance)
+    p_currency <- last(balance_df$currency)
+    
+    if (prediction_df$.fitted[i] < l_bound) { # euro gets cheaper > buy huf
+      balance <- ifelse(p_currency == "eur", p_balance * prediction_df$close[i - 1], p_balance)
+      currency <- "huf"
+      
+    } else if (prediction_df$.fitted[i] > u_bound) { # euro gets more expensive > buy euro
+      balance <- ifelse(p_currency == "huf", p_balance / prediction_df$close[i - 1], p_balance)
+      currency <- "eur"
+    } else { # do nothing
+      balance <- p_balance
+      currency <- p_currency
+    }
+    
+    balance_df <- bind_rows(balance_df, tibble(balance, currency))
+  }
+  
+  bind_cols(prediction_df, balance_df)
+  
+})
+df<-z[[1]]
+mean_interval <- function(x) {
+  if (sd(x) == 0) {
+    tibble(estimate = mean(x), conf.low = mean(x), conf.high = mean(x))
+  } else {
+    t.test(x, mu = 0) |>
+      broom::tidy() |>
+      select(estimate, conf.low, conf.high)
+  }
+}
+
+z |>
+  map_dfr(mutate, balance = ifelse(currency == "huf", balance / close, balance), t = row_number()) |>
+  group_by(t) |>
+  group_modify(\(x, y) mean_interval(x$balance)) |>
+  ggplot(aes(t)) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), fill = "plum4", alpha = .3) +
+  geom_line(aes(y = estimate))
