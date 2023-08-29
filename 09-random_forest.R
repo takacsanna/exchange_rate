@@ -1,6 +1,6 @@
 exchage_text_df <- pin_read(.board, "exchage_text_df")
 eurhuf_df <- pin_read(.board, "eurhuf_df")
-exchage_text_df <- read_csv("exchage_rate_df_log.csv")
+#exchage_text_df <- read_csv("exchage_rate_df_log.csv")
 
 leaded_close_df <- eurhuf_df |>
   transmute(
@@ -16,18 +16,13 @@ rand_forest_lm_spec <- rand_forest(
   trees = 50,
   min_n =5
 ) %>%
-  set_engine("ranger") %>%
-  set_mode("regression") %>%
-  translate()
+  set_engine("randomForest") %>%
+  set_mode("regression")
 
 lasso_spec <- linear_reg(penalty = 0.1, mixture = 1) %>%
-  set_engine("glmnet") %>% 
-  translate()
+  set_engine("glmnet")
 
-svm_spec <- svm_linear %>% 
-  set_engine("LiblineaR") %>% 
-  set_mode("regression") %>% 
-  translate()
+svm_spec <- svm_linear(mode = "regression", engine = "LiblineaR")
 
 
 design_df <- exchage_text_df |>
@@ -36,8 +31,8 @@ design_df <- exchage_text_df |>
 
 folds <- design_df |>
   rolling_origin(
-    initial = 3000,
-    assess = 1000,
+    initial = 300,
+    assess = 100,
     cumulative = FALSE
   )
 
@@ -95,8 +90,19 @@ z<-fit_resamples(
   metrics = metric_set(mape, rmse, rsq)
 )
 
+
+zx <- tune_grid(
+  wf,
+  resamples = folds,
+  grid = 15,
+  metrics = metric_set(mape, rmse, rsq)
+  
+)
+
 stopCluster(cl)
 show_notes(.Last.tune.result)
+
+qq<-z %>% unnest(cols = c(splits, .metrics, .notes))
 
 zy <- map(z$splits, \(s) {
   training_set <- (s) |>
@@ -155,3 +161,6 @@ z |>
   ggplot(aes(t)) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), fill = "plum4", alpha = .3) +
   geom_line(aes(y = estimate))
+
+#mda maximalizálása a célfüggvény?
+#hiperparaméterek, 300/100-as mintákon megnézni, hogy fut-e 
