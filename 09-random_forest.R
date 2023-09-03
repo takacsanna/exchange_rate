@@ -13,8 +13,8 @@ linear_reg_glm_spec <- linear_reg() %>%
   set_engine('lm')
 
 rand_forest_lm_spec <- rand_forest(
-  trees = 50,
-  min_n =5
+  trees = tune(),
+  min_n = 5
 ) %>%
   set_engine("randomForest") %>%
   set_mode("regression")
