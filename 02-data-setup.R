@@ -4,17 +4,6 @@
 month_names_hun <- c("január", "február", "március", "április", "május", "június", "július",
                      "augusztus", "szeptember", "október", "november", "december")
 
-# exchange_rate -----------------------------------------------
-
-eurhuf_df <- pin_read(.board, "eurhuf_df")
-
-date_filter <- function(.data) {
-  .data |>
-    select(time, text) |>
-    drop_na() |>
-    filter(time >= min(eurhuf_df$time) - 5, time <= max(eurhuf_df$time) + 5)
-}
-
 # index -------------------------------------------------------
 
 
@@ -28,8 +17,7 @@ index <- pin_read(.board, "index_meta") |>
     time = ifelse(str_starts(time, "20"), time, str_c("2023 ", time)),
     time = ymd_hm(time),
     text
-  ) |>
-  date_filter()
+  )
 
 
 # telex -------------------------------------------------------
@@ -39,8 +27,7 @@ telex <- pin_read(.board, "telex") |>
     time = str_replace_all(date, set_names(month.name, c("januar", "februar", "marcius", "aprilis", "majus", "junius", "julius", "augusztus", "szeptermber", "oktober", "november", "december"))),
     time = ymd_hm(time),
     text
-  ) |>
-  date_filter()
+  )
 
 # blikk -------------------------------------------------------
 
@@ -49,16 +36,14 @@ blikk <- pin_read(.board, "blikk_meta") |>
   left_join(pin_read(.board, "blikk_text_df"), multiple = "all", by = "url") |>
   tibble() |>
   distinct(url, .keep_all = TRUE) |>
-  transmute(time = ymd_hm(time), text) |>
-  date_filter()
+  transmute(time = ymd_hm(time), text)
 
 
 # 24 ----------------------------------------------------------
 
 huszonnegy <- pin_read(.board, "huszonnegy") |>
   transmute(time = ymd_hm(date), text = szoveg) |>
-  drop_na(text) |>
-  date_filter()
+  drop_na(text)
 
 # portfolio ---------------------------------------------------
 
@@ -69,14 +54,12 @@ portfolio <- pin_read(.board, "portfolio") |>
     time = str_replace_all(time, set_names(month.name, month_names_hun)),
     time = ymd_hm(time),
     text
-  ) |>
-  date_filter()
+  )
 
 # origo -------------------------------------------------------
 
 origo <- pin_read(.board, "origo_text") |>
-  mutate(time = ymd_hm(time)) |>
-  date_filter()
+  mutate(time = ymd_hm(time))
 
 # reduce ------------------------------------------------------
 

@@ -43,7 +43,8 @@ raw_6 <- raw_news_df %>%
   filter(medium == "huszonnegy" | medium == "portfolio" | medium == "index")
 
 clean_news_df <- rbind(raw_3, raw_4, raw_5, raw_6) |>
-  filter(medium %in% c("telex", "origo", "blikk", "huszonnegy", "portfolio", "index"))
+  filter(medium %in% c("telex", "origo", "blikk", "huszonnegy", "portfolio", "index")) %>%
+  drop_na(time)
 
 pin_write(.board, clean_news_df, "clean_news_df")
 
