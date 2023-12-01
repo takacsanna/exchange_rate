@@ -1,2 +1,1 @@
-library(stats)
-source("utils.R")
+source("renv/activate.R")
